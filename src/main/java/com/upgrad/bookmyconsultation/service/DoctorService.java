@@ -35,7 +35,7 @@ public class DoctorService {
         // Validate the doctor details
         ValidationUtils.validate(doctor);
 
-        if (doctor.getAddress() == null) throw new InvalidInputException(Arrays.asList("Address"));
+        if (doctor.getAddress() == null) throw new InvalidInputException(List.of("Address"));
         doctor.setId(UUID.randomUUID().toString());
 
         if (doctor.getSpeciality() == null) {
@@ -88,9 +88,7 @@ public class DoctorService {
                 .filter(slot -> {
                     return appointmentRepository
                             .findByDoctorIdAndTimeSlotAndAppointmentDate(timeSlot.getDoctorId(), slot, timeSlot.getAvailableDate()) == null;
-
-                })
-                .collect(Collectors.toList()));
+                }).collect(Collectors.toList()));
 
         return timeSlot;
 

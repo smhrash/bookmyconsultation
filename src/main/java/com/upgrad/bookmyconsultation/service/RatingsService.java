@@ -23,7 +23,6 @@ public class RatingsService {
     @Autowired
     private DoctorRepository doctorRepository;
 
-
     public void submitRatings(Rating rating) {
         // Set a UUID for the rating
         rating.setId(UUID.randomUUID().toString());

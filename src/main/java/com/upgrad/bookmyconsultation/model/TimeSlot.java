@@ -12,7 +12,11 @@ import java.util.Random;
 
 @Data
 @NoArgsConstructor
-public class TimeSlot {
+public class
+
+
+
+TimeSlot {
 	private String doctorId;
 	private String availableDate;
 	private List<String> timeSlot;

@@ -27,66 +27,65 @@ import java.time.ZonedDateTime;
 @Service
 public class AuthTokenService {
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Autowired
-	private UserAuthTokenRepository userAuthDao;
+    @Autowired
+    private UserAuthTokenRepository userAuthDao;
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UserAuthToken issueToken(final User user) {
 
-	@Transactional(propagation = Propagation.MANDATORY)
-	public UserAuthToken issueToken(final User user) {
+        final ZonedDateTime now = DateTimeProvider.currentProgramTime();
 
-		final ZonedDateTime now = DateTimeProvider.currentProgramTime();
+        final UserAuthToken userAuthToken = userAuthDao.findByUserEmailId(user.getEmailId());
+        final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
+        if (tokenVerifier.isActive()) {
+            return userAuthToken;
+        }
 
-		final UserAuthToken userAuthToken = userAuthDao.findByUserEmailId(user.getEmailId());
-		final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
-		if (tokenVerifier.isActive()) {
-			return userAuthToken;
-		}
+        final JwtTokenProvider tokenProvider = new JwtTokenProvider(user.getPassword());
+        final ZonedDateTime expiresAt = now.plusHours(8);
+        final String authToken = tokenProvider.generateToken(user.getEmailId(), now, expiresAt);
+        System.out.println(authToken);
+        final UserAuthToken authTokenEntity = new UserAuthToken();
+        authTokenEntity.setUser(user);
+        authTokenEntity.setAccessToken(authToken);
+        authTokenEntity.setLoginAt(now);
+        authTokenEntity.setExpiresAt(expiresAt);
+        userAuthDao.save(authTokenEntity);
 
-		final JwtTokenProvider tokenProvider = new JwtTokenProvider(user.getPassword());
-		final ZonedDateTime expiresAt = now.plusHours(8);
-		final String authToken = tokenProvider.generateToken(user.getEmailId(), now, expiresAt);
-		System.out.println(authToken);
-		final UserAuthToken authTokenEntity = new UserAuthToken();
-		authTokenEntity.setUser(user);
-		authTokenEntity.setAccessToken(authToken);
-		authTokenEntity.setLoginAt(now);
-		authTokenEntity.setExpiresAt(expiresAt);
-		userAuthDao.save(authTokenEntity);
+        return authTokenEntity;
 
-		return authTokenEntity;
+    }
 
-	}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void invalidateToken(final String accessToken) throws AuthorizationFailedException {
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void invalidateToken(final String accessToken) throws AuthorizationFailedException {
+        final UserAuthToken userAuthToken = userAuthDao.findByAccessToken(accessToken);
+        final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
+        if (tokenVerifier.isNotFound()) {
+            throw new AuthorizationFailedException(UserErrorCode.USR_005);
+        }
+        if (tokenVerifier.hasExpired()) {
+            throw new AuthorizationFailedException(UserErrorCode.USR_006);
+        }
 
-		final UserAuthToken userAuthToken = userAuthDao.findByAccessToken(accessToken);
-		final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
-		if (tokenVerifier.isNotFound()) {
-			throw new AuthorizationFailedException(UserErrorCode.USR_005);
-		}
-		if (tokenVerifier.hasExpired()) {
-			throw new AuthorizationFailedException(UserErrorCode.USR_006);
-		}
+        userAuthToken.setLogoutAt(DateTimeProvider.currentProgramTime());
+        userAuthDao.save(userAuthToken);
+    }
 
-		userAuthToken.setLogoutAt(DateTimeProvider.currentProgramTime());
-		userAuthDao.save(userAuthToken);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED)
-	public UserAuthToken validateToken(@NotNull String accessToken) throws AuthorizationFailedException {
-		final UserAuthToken userAuthToken = userAuthDao.findByAccessToken(accessToken);
-		final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
-		if (tokenVerifier.isNotFound() || tokenVerifier.hasLoggedOut()) {
-			throw new AuthorizationFailedException(UserErrorCode.USR_005);
-		}
-		if (tokenVerifier.hasExpired()) {
-			throw new AuthorizationFailedException(UserErrorCode.USR_006);
-		}
-		return userAuthToken;
-	}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public UserAuthToken validateToken(@NotNull String accessToken) throws AuthorizationFailedException {
+        final UserAuthToken userAuthToken = userAuthDao.findByAccessToken(accessToken);
+        final UserAuthTokenVerifier tokenVerifier = new UserAuthTokenVerifier(userAuthToken);
+        if (tokenVerifier.isNotFound() || tokenVerifier.hasLoggedOut()) {
+            throw new AuthorizationFailedException(UserErrorCode.USR_005);
+        }
+        if (tokenVerifier.hasExpired()) {
+            throw new AuthorizationFailedException(UserErrorCode.USR_006);
+        }
+        return userAuthToken;
+    }
 
 }

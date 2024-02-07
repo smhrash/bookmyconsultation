@@ -5,6 +5,7 @@ import com.upgrad.bookmyconsultation.servlet.CorsFilter;
 import com.upgrad.bookmyconsultation.servlet.RequestContextFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

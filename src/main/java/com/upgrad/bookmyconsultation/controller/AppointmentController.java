@@ -19,13 +19,14 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
-    // Endpoint to create a new appointment
+    // create a new appointment
     @PostMapping
     public ResponseEntity<String> bookAppointment(@RequestBody Appointment appointment) throws InvalidInputException {
 
         return ResponseEntity.ok(appointmentService.appointment(appointment));
     }
 
+    // get an appointment
     @GetMapping("/{appointmentId}")
     public ResponseEntity<Appointment> getAppointment(@PathVariable String appointmentId) {
         return ResponseEntity.ok(appointmentService.getAppointment(appointmentId));
